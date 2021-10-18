@@ -1,0 +1,115 @@
+﻿@page "/editstock_org"
+@page "/editstock_org/{id:int}"
+@inject IDbContextFactory<nrcwebContext> dbf;
+@_stock.StockCode
+    <EditForm Model=_stock OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <div class="form-group">
+            <label for="StockCode">كود المخزن</label>
+            <input type="text" required size="10"
+           placeholder="كود المخزن"
+           minlength="2" maxlength="2"  id="StockCode" value="@_stock.StockCode"  @onchange="@((a)=>f_onchange(a,"stockcode"))" class="form-control" />
+            <ValidationMessage For="() => _stock.StockCode" />
+        </div>
+        <div class="form-group">
+            <label for="StockCode">وصف المخزن</label>
+            <input id="StockName" value=@_stock.StockName  @onchange="@((a)=>f_onchange(a,"stockname"))"  class="form-control" />
+            <ValidationMessage For="() => _stock.StockName" />
+        </div>
+        <div class="form-group">
+            <label for="Name1">وصف</label>
+            <InputText id="Name1" @bind-Value="_stock.Name1" class="form-control" />
+            <ValidationMessage For="() => _stock.Name1" />
+        </div>
+        <div class="form-group">
+            <label for="Vdate">تاريخ التعريف</label>
+            <InputDate id="Vdate" @bind-Value="_stock.Vdate" ParsingErrorMessage="التاريخ غير صحيح" class="form-control" />
+            <ValidationMessage For="() => _stock.Vdate" />
+        </div>
+        <ValidationSummary />
+    </EditForm>
+
+
+<button class="btn btn-primary" @onclick="onSave">save all</button>
+<button class="btn btn-primary" @onclick="onNew">جديد</button>
+<button class="btn btn-danger" @onclick="onDelete">حذف</button>
+
+
+@code {
+    [Parameter]
+    public int? id { get; set; }
+    private Stock _stock = new Stock();
+    protected override void OnInitialized()
+    {
+        if (id != null) using (var db = dbf.CreateDbContext()) _stock = db.Stocks.Where(r => r.Id == id).FirstOrDefault();
+
+    }
+
+    private async Task onSave()
+    {
+        try
+        {
+
+
+            using (var db = dbf.CreateDbContext())
+            {
+                if (_stock.Id == 0)
+                {
+                    await db.AddAsync(_stock);
+                }
+                else
+                {
+                    db.Update(_stock);
+                }
+                await db.SaveChangesAsync();
+            }
+
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+
+    }
+    private void onDelete()
+    {
+        using (var db = dbf.CreateDbContext())
+        {
+            if (_stock.Id != 0) db.Remove(_stock);
+        }
+    }
+    private void onNew()
+    {
+        _stock = new Stock();
+    }
+    private  void HandleValidSubmit(){ }
+
+    public  async Task f_onchange(ChangeEventArgs args,string name) {
+        string _value="";
+        switch (name.ToLower())
+        {
+            case "stockcode":
+                _stock.StockCode = "";
+                await Task.Delay(1); //Magic!  
+                StateHasChanged();
+                _value = (string)args.Value;
+                _stock.StockCode = _value.Substring(0, 2);
+                StateHasChanged();
+                break;
+            case "stockname":
+                _stock.StockName = "";
+                await Task.Delay(1); //Magic!  
+                StateHasChanged();
+                _value = (string)args.Value;
+                _stock.StockName = _value.Substring(0, 10);
+                StateHasChanged();
+                break;
+            case  "name1":
+            case   "vdate":
+            default:   break;
+        }
+
+    }
+}
+
+
